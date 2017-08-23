@@ -20,6 +20,8 @@ import (
 	"runtime"
 	"strings"
 
+	"stormbreaker/soong/android"
+
 	"github.com/google/blueprint/proptools"
 )
 
@@ -146,6 +148,9 @@ type variableProperties struct {
 			Srcs         []string `android:"arch_variant"`
 			Exclude_srcs []string `android:"arch_variant"`
 		} `android:"arch_variant"`
+
+		// include Stormbreaker variables
+		Stormbreaker android.Product_variables
 	} `android:"arch_variant"`
 }
 
@@ -390,6 +395,9 @@ type productVariables struct {
 	SelinuxIgnoreNeverallows bool `json:",omitempty"`
 
 	SepolicySplit bool `json:",omitempty"`
+
+	// include Stormbreaker variables
+	Stormbreaker android.ProductVariables
 }
 
 func boolPtr(v bool) *bool {
