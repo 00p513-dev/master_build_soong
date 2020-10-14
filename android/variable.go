@@ -20,8 +20,6 @@ import (
 	"runtime"
 	"strings"
 
-	"stormbreaker/soong/android"
-
 	"github.com/google/blueprint/proptools"
 )
 
@@ -148,9 +146,6 @@ type variableProperties struct {
 			Srcs         []string `android:"arch_variant"`
 			Exclude_srcs []string `android:"arch_variant"`
 		} `android:"arch_variant"`
-
-		// include Stormbreaker variables
-		Stormbreaker android.Product_variables
 	} `android:"arch_variant"`
 }
 
@@ -395,9 +390,6 @@ type productVariables struct {
 	SelinuxIgnoreNeverallows bool `json:",omitempty"`
 
 	SepolicySplit bool `json:",omitempty"`
-
-	// include Stormbreaker variables
-	Stormbreaker android.ProductVariables
 }
 
 func boolPtr(v bool) *bool {
@@ -531,23 +523,14 @@ func VariableMutator(mctx BottomUpMutatorContext) {
 
 	productVariables := reflect.ValueOf(mctx.Config().productVariables)
 
-	valStruct := reflect.ValueOf(mctx.Config().productVariables)
-
-	doVariableMutation(mctx, a, variableValues, valStruct)
-}
-
-func doVariableMutation(mctx BottomUpMutatorContext, a *ModuleBase, variableValues reflect.Value, valStruct reflect.Value) {
 	for i := 0; i < variableValues.NumField(); i++ {
 		variableValue := variableValues.Field(i)
 		name := variableValues.Type().Field(i).Name
 		property := "product_variables." + proptools.PropertyNameForField(name)
 
 		// Check that the variable was set for the product
-		val := valStruct.FieldByName(name)
-		if val.IsValid() && val.Kind() == reflect.Struct {
-			doVariableMutation(mctx, a, variableValue, val)
-			continue
-		} else if !val.IsValid() || val.Kind() != reflect.Ptr || val.IsNil() {
+		val := reflect.ValueOf(mctx.Config().productVariables).FieldByName(name)
+		if !val.IsValid() || val.Kind() != reflect.Ptr || val.IsNil() {
 			continue
 		}
 
@@ -719,11 +702,6 @@ func createVariableProperties(moduleTypeProps []interface{}, productVariables in
 func createVariablePropertiesType(moduleTypeProps []interface{}, productVariables interface{}) reflect.Type {
 	typ, _ := proptools.FilterPropertyStruct(reflect.TypeOf(productVariables),
 		func(field reflect.StructField, prefix string) (bool, reflect.StructField) {
-			if strings.HasPrefix(prefix, "Product_variables.Stormbreaker") {
-				// Convert Product_variables.Stormbreaker.Foo to Stormbreaker.Foo
-				_, prefix = splitPrefix(prefix)
-			}
-
 			// Filter function, returns true if the field should be in the resulting struct
 			if prefix == "" {
 				// Keep the top level Product_variables field
